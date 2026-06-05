@@ -14,7 +14,7 @@ export class MailService {
   }
 
   async sendPasswordReset(to: string, nombre: string, token: string): Promise<void> {
-    const deepLink = `oficiosapp://reset-password?token=${token}`;
+    const deepLink = `intent://reset-password?token=${token}#Intent;scheme=oficiosapp;package=com.example.oficiosapp;end`;
 
     const { error } = await this.resend.emails.send({
       from: this.from,
