@@ -1,0 +1,74 @@
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Denuncia } from './denuncia.entity';
+import { CreateDenunciaDto } from './dto/create-denuncia.dto';
+import { UpdateDenunciaDto } from './dto/update-denuncia.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
+import { paginate, PaginatedResult } from '../common/utils/paginate';
+import { AuditService } from '../auditoria/audit.service';
+
+@Injectable()
+export class DenunciasService {
+  private readonly logger = new Logger(DenunciasService.name);
+
+  constructor(
+    @InjectRepository(Denuncia)
+    private readonly repo: Repository<Denuncia>,
+    private readonly audit: AuditService,
+  ) {}
+
+  findAll(pagination: PaginationDto): Promise<PaginatedResult<Denuncia>> {
+    return paginate(this.repo, pagination, undefined, { fecha_creacion: 'DESC' });
+  }
+
+  findOne(id: number) {
+    return this.repo.findOneByOrFail({ id }).catch(() => {
+      throw new NotFoundException('Denuncia no encontrada');
+    });
+  }
+
+  async create(dto: CreateDenunciaDto) {
+    const denuncia = this.repo.create(dto);
+    await this.repo.save(denuncia);
+
+    this.logger.warn(
+      `Denuncia recibida: id=${denuncia.id}, tipo="${(denuncia as any).tipo}", referencia_id=${(denuncia as any).referencia_id}, motivo="${(denuncia as any).motivo}"`,
+    );
+    this.audit.log({
+      usuarioId: (denuncia as any).denunciante_id ?? null,
+      tabla: 'Denuncias',
+      registroId: denuncia.id,
+      accion: 'INSERT',
+      valorNuevo: {
+        tipo: (denuncia as any).tipo,
+        referencia_id: (denuncia as any).referencia_id,
+        motivo: (denuncia as any).motivo,
+        descripcion: (denuncia as any).descripcion,
+      },
+    });
+
+    return denuncia;
+  }
+
+  async update(id: number, dto: UpdateDenunciaDto) {
+    const denuncia = await this.findOne(id);
+    const anterior = { estado: (denuncia as any).estado };
+    Object.assign(denuncia, dto);
+    await this.repo.save(denuncia);
+
+    this.logger.log(
+      `Denuncia resuelta: id=${id}, estado="${(denuncia as any).estado}"`,
+    );
+    this.audit.log({
+      usuarioId: null,
+      tabla: 'Denuncias',
+      registroId: id,
+      accion: 'UPDATE',
+      valorAnterior: anterior,
+      valorNuevo: { estado: (denuncia as any).estado },
+    });
+
+    return denuncia;
+  }
+}
