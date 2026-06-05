@@ -14,8 +14,6 @@ export class MailService {
   }
 
   async sendPasswordReset(to: string, nombre: string, token: string): Promise<void> {
-    const deepLink = `intent://reset-password?token=${token}#Intent;scheme=oficiosapp;package=com.example.oficiosapp;end`;
-
     const { error } = await this.resend.emails.send({
       from: this.from,
       to,
@@ -30,22 +28,22 @@ export class MailService {
         </p>
 
         <p style="margin:0 0 16px;font-size:15px;color:#374151;">
-          Toca el botón desde tu celular para crear una nueva contraseña:
+          Copia el siguiente código y pégalo en la app en la pantalla de
+          <strong>Restablecer contraseña</strong>:
         </p>
 
-        <div style="text-align:center;margin:32px 0;">
-          <a href="${deepLink}"
-             style="display:inline-block;padding:14px 36px;background:#1E88E5;color:#ffffff;
-                    border-radius:10px;text-decoration:none;font-size:16px;font-weight:600;
-                    letter-spacing:0.3px;box-shadow:0 4px 14px rgba(30,136,229,0.35);">
-            Restablecer contraseña
-          </a>
+        <div style="background:#F3F4F6;border:2px dashed #D1D5DB;border-radius:10px;
+                    padding:20px;margin:24px 0;text-align:center;">
+          <p style="margin:0 0 8px;font-size:12px;color:#9CA3AF;text-transform:uppercase;
+                    letter-spacing:1px;font-weight:600;">Código de recuperación</p>
+          <p style="margin:0;font-size:14px;font-family:monospace;color:#111827;
+                    word-break:break-all;letter-spacing:1px;">${token}</p>
         </div>
 
         <div style="background:#FFF7ED;border-left:4px solid #F97316;border-radius:6px;
                     padding:14px 16px;margin:24px 0;">
           <p style="margin:0;font-size:13px;color:#92400E;">
-            ⏱ Este enlace expira en <strong>60 minutos</strong>.
+            ⏱ Este código expira en <strong>60 minutos</strong>.
           </p>
         </div>
 
