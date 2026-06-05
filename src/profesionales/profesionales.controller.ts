@@ -23,6 +23,14 @@ export class ProfesionalesController {
     return this.service.findAll(query);
   }
 
+  @Get('ciudades-frecuentes')
+  @Public()
+  @ApiOperation({ summary: 'Ciudades con más profesionales registrados' })
+  async getFrequentCities() {
+    const data = await this.service.getFrequentCities();
+    return { data };
+  }
+
   @Get(':id')
   @Public()
   @ApiOperation({ summary: 'Obtener profesional con todas sus relaciones' })

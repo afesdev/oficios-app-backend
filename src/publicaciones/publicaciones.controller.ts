@@ -3,7 +3,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { IsOptional, IsInt, Min } from 'class-validator';
+import { IsOptional, IsInt, Min, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Public } from '../auth/public.decorator';
 import { PublicacionesService } from './publicaciones.service';
@@ -26,6 +26,10 @@ class PublicacionesQueryDto extends PaginationDto {
   @IsInt()
   @Min(1)
   categoria_id?: number;
+
+  @IsOptional()
+  @IsString()
+  q?: string;
 }
 
 @ApiTags('Publicaciones')
@@ -43,9 +47,10 @@ export class PublicacionesController {
   @ApiQuery({ name: 'categoria_id', required: false, type: Number })
   findAll(@Query() query: PublicacionesQueryDto, @Request() req: any) {
     const usuarioId: number | undefined = req.user?.id;
-    const { profesional_id, categoria_id, ...pagination } = query;
+    const { profesional_id, categoria_id, q, ...pagination } = query;
     if (profesional_id) return this.service.findByProfesional(profesional_id, pagination, usuarioId);
     if (categoria_id) return this.service.findByCategoria(categoria_id, pagination, usuarioId);
+    if (q) return this.service.findByQuery(q, pagination, usuarioId);
     return this.service.findAll(pagination, usuarioId);
   }
 

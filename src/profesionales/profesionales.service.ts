@@ -56,6 +56,18 @@ export class ProfesionalesService {
     });
   }
 
+  async getFrequentCities(limit: number = 6) {
+    const result = await this.repo
+      .createQueryBuilder('prof')
+      .select('prof.ciudad', 'ciudad')
+      .addSelect('COUNT(prof.id)', 'count')
+      .groupBy('prof.ciudad')
+      .orderBy('count', 'DESC')
+      .take(limit)
+      .getRawMany();
+    return result.map((r) => ({ ciudad: r.ciudad, count: parseInt(r.count, 10) }));
+  }
+
   async search(pagination: PaginationDto, q?: string, ciudad?: string, categoriaId?: number) {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 20;

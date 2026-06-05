@@ -75,6 +75,33 @@ export class PublicacionesService {
     return this.withLikes(result, usuarioId);
   }
 
+  async findByQuery(q: string, pagination: PaginationDto, usuarioId?: number) {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const qb = this.repo.createQueryBuilder('pub')
+      .leftJoinAndSelect('pub.fotos', 'fotos')
+      .leftJoinAndSelect('pub.profesional', 'prof')
+      .leftJoinAndSelect('prof.usuario', 'usr')
+      .leftJoinAndSelect('prof.categoria', 'cat')
+      .where(
+        'pub.titulo LIKE :q OR usr.nombre_completo LIKE :q OR cat.nombre LIKE :q',
+        { q: `%${q}%` },
+      )
+      .orderBy('pub.fecha_creacion', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+
+    const result: PaginatedResult<Publicacione> = {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+    return this.withLikes(result, usuarioId);
+  }
+
   async findByCategoria(categoriaId: number, pagination: PaginationDto, usuarioId?: number) {
     const result = await paginate(
       this.repo, pagination,
