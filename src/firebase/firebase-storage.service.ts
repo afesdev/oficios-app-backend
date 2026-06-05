@@ -2,7 +2,6 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as path from 'path';
 import * as admin from 'firebase-admin';
-import { v4 as uuid } from 'uuid';
 import type { Bucket } from '@google-cloud/storage';
 
 @Injectable()
@@ -35,7 +34,7 @@ export class FirebaseStorageService {
     userId: string = 'system',
   ): Promise<{ url: string; fileName: string }> {
     const ext = path.extname(file.originalname);
-    const fileName = `uploads/${userId}/${folder}/${uuid()}${ext}`;
+    const fileName = `uploads/${userId}/${folder}/${crypto.randomUUID()}${ext}`;
     const blob = this.bucket.file(fileName);
 
     await blob.save(file.buffer, {
