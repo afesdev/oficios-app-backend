@@ -109,8 +109,9 @@ export class ProfesionalesService {
       .createQueryBuilder('prof')
       .leftJoinAndSelect('prof.categoria', 'cat')
       .leftJoinAndSelect('prof.usuario', 'usr')
-      .innerJoinAndSelect('prof.ubicaciones', 'ub')
-      .where(
+      .leftJoinAndSelect('prof.ubicaciones', 'ub')
+      .where('ub.latitud IS NOT NULL AND ub.longitud IS NOT NULL')
+      .andWhere(
         `(6371 * ACOS(
           COS(RADIANS(:lat)) * COS(RADIANS(CAST(ub.latitud AS FLOAT))) *
           COS(RADIANS(CAST(ub.longitud AS FLOAT)) - RADIANS(:lng)) +
