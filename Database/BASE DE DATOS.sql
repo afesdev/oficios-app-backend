@@ -75,7 +75,6 @@ CREATE TABLE Profesionales (
     descripcion_perfil NVARCHAR(MAX) NULL,
     foto_perfil_url NVARCHAR(2083) NULL,
     ciudad NVARCHAR(100) NOT NULL,
-    cobertura_km DECIMAL(6,2) NULL,
     CONSTRAINT PK_Profesionales PRIMARY KEY CLUSTERED (id),
     CONSTRAINT UQ_Profesionales_Usuario UNIQUE (usuario_id),
     CONSTRAINT FK_Profesionales_Usuarios FOREIGN KEY (usuario_id)

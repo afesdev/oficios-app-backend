@@ -34,9 +34,6 @@ export class Profesionale {
   @Column({ length: 100 })
   ciudad: string;
 
-  @Column({ type: 'decimal', precision: 6, scale: 2, nullable: true })
-  cobertura_km: number;
-
   @ManyToOne(() => Categoria, (categoria) => categoria.profesionales)
   @JoinColumn({ name: 'categoria_id' })
   categoria: Categoria;

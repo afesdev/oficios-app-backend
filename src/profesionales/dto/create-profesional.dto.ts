@@ -25,10 +25,4 @@ export class CreateProfesionalDto {
   @IsString()
   @MaxLength(100)
   ciudad: string;
-
-  @ApiPropertyOptional({ example: 30 })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  cobertura_km?: number;
 }
