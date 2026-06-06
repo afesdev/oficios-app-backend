@@ -6,9 +6,11 @@ import { AuditService } from './audit.service';
 import { AuditSubscriber } from './audit.subscriber';
 import { AuditContextService } from './audit-context.service';
 import { AuditContextInterceptor } from './audit-context.interceptor';
+import { AuditoriaController } from './auditoria.controller';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Auditoria])],
+  controllers: [AuditoriaController],
   providers: [
     AuditService,
     AuditContextService,

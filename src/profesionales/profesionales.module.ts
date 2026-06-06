@@ -9,6 +9,7 @@ import { EnlaceProfesional } from './enlace-profesional.entity';
 import { Verificacione } from './verificacione.entity';
 import { ProfesionalesController } from './profesionales.controller';
 import { ProfesionalesService } from './profesionales.service';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ProfesionalesService } from './profesionales.service';
       Profesionale, Servicio, PreciosReferenciale,
       HorarioAtencion, Ubicacione, EnlaceProfesional, Verificacione,
     ]),
+    AuditoriaModule,
   ],
   controllers: [ProfesionalesController],
   providers: [ProfesionalesService],

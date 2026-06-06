@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LikePublicacion } from './like-publicacion.entity';
+import { AuditService } from '../auditoria/audit.service';
+import { AuditContextService } from '../auditoria/audit-context.service';
 
 export interface LikeStatus {
   liked: boolean;
@@ -13,9 +15,10 @@ export class LikesService {
   constructor(
     @InjectRepository(LikePublicacion)
     private readonly repo: Repository<LikePublicacion>,
+    private readonly audit: AuditService,
+    private readonly ctx: AuditContextService,
   ) {}
 
-  /** Alterna like/unlike. Devuelve el estado resultante y el total. */
   async toggle(usuarioId: number, publicacionId: number): Promise<LikeStatus> {
     const existing = await this.repo.findOneBy({
       usuario_id: usuarioId,
@@ -24,17 +27,30 @@ export class LikesService {
 
     if (existing) {
       await this.repo.remove(existing);
+      this.audit.log({
+        usuarioId: this.ctx.get().usuarioId,
+        tabla: 'LikesPublicaciones',
+        registroId: usuarioId,
+        accion: 'DELETE',
+        valorAnterior: { usuario_id: usuarioId, publicacion_id: publicacionId },
+      });
     } else {
-      await this.repo.save(
+      const saved = await this.repo.save(
         this.repo.create({ usuario_id: usuarioId, publicacion_id: publicacionId }),
       );
+      this.audit.log({
+        usuarioId: this.ctx.get().usuarioId,
+        tabla: 'LikesPublicaciones',
+        registroId: usuarioId,
+        accion: 'INSERT',
+        valorNuevo: { usuario_id: usuarioId, publicacion_id: publicacionId },
+      });
     }
 
     const total_likes = await this.repo.countBy({ publicacion_id: publicacionId });
     return { liked: !existing, total_likes };
   }
 
-  /** Estado de like de una publicación para un usuario concreto. */
   async getStatus(publicacionId: number, usuarioId?: number): Promise<LikeStatus> {
     const [total_likes, liked] = await Promise.all([
       this.repo.countBy({ publicacion_id: publicacionId }),
@@ -45,7 +61,6 @@ export class LikesService {
     return { liked, total_likes };
   }
 
-  /** IDs de publicaciones que le gustan al usuario (para precarga en el feed). */
   async getMisLikes(usuarioId: number): Promise<number[]> {
     const rows = await this.repo.find({
       select: { publicacion_id: true },
@@ -54,7 +69,6 @@ export class LikesService {
     return rows.map((r) => r.publicacion_id);
   }
 
-  /** Mapa publicacion_id → total_likes para un conjunto de IDs (batch). */
   async getCountsForPublicaciones(ids: number[]): Promise<Record<number, number>> {
     if (!ids.length) return {};
     const rows = await this.repo

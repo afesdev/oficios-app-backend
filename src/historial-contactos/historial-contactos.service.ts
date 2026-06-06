@@ -5,12 +5,16 @@ import { HistorialContacto } from './historial-contacto.entity';
 import { CreateHistorialContactoDto } from './dto/create-historial-contacto.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { paginate } from '../common/utils/paginate';
+import { AuditService } from '../auditoria/audit.service';
+import { AuditContextService } from '../auditoria/audit-context.service';
 
 @Injectable()
 export class HistorialContactosService {
   constructor(
     @InjectRepository(HistorialContacto)
     private readonly repo: Repository<HistorialContacto>,
+    private readonly audit: AuditService,
+    private readonly ctx: AuditContextService,
   ) {}
 
   findByProfesional(profesionalId: number, pagination: PaginationDto) {
@@ -28,8 +32,16 @@ export class HistorialContactosService {
     return result;
   }
 
-  create(dto: CreateHistorialContactoDto) {
+  async create(dto: CreateHistorialContactoDto) {
     const record = this.repo.create(dto);
-    return this.repo.save(record);
+    const saved = await this.repo.save(record);
+    this.audit.log({
+      usuarioId: this.ctx.get().usuarioId,
+      tabla: 'HistorialContactos',
+      registroId: saved.id,
+      accion: 'INSERT',
+      valorNuevo: { cliente_id: dto.cliente_id, profesional_id: dto.profesional_id, tipo_contacto: dto.tipo_contacto },
+    });
+    return saved;
   }
 }

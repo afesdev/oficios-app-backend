@@ -13,6 +13,8 @@ import { Verificacione } from './verificacione.entity';
 import { CreateProfesionalDto } from './dto/create-profesional.dto';
 import { UpdateProfesionalDto } from './dto/update-profesional.dto';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
+import { AuditService } from '../auditoria/audit.service';
+import { AuditContextService } from '../auditoria/audit-context.service';
 
 @Injectable()
 export class ProfesionalesService {
@@ -32,6 +34,8 @@ export class ProfesionalesService {
     private readonly enlacesRepo: Repository<EnlaceProfesional>,
     @InjectRepository(Verificacione)
     private readonly verificacionesRepo: Repository<Verificacione>,
+    private readonly audit: AuditService,
+    private readonly ctx: AuditContextService,
   ) {}
 
   findByUsuario(usuarioId: number) {
@@ -188,6 +192,15 @@ export class ProfesionalesService {
         );
       }
     }
+
+    this.audit.log({
+      usuarioId: this.ctx.get().usuarioId,
+      tabla: 'Servicios',
+      registroId: (saved as Servicio).id,
+      accion: 'INSERT',
+      valorNuevo: { ...dto, profesional_id: profesionalId },
+    });
+
     return this.serviciosRepo.findOne({
       where: { id: (saved as Servicio).id },
       relations: { preciosReferenciales: true },
@@ -199,6 +212,8 @@ export class ProfesionalesService {
       where: { id },
       relations: { preciosReferenciales: true },
     });
+
+    const old = { ...servicio, precios: servicio.preciosReferenciales?.map(p => ({ ...p })) };
 
     if (dto.nombre !== undefined) servicio.nombre = dto.nombre;
     if (dto.descripcion !== undefined) servicio.descripcion = dto.descripcion;
@@ -215,6 +230,15 @@ export class ProfesionalesService {
       }
     }
 
+    this.audit.log({
+      usuarioId: this.ctx.get().usuarioId,
+      tabla: 'Servicios',
+      registroId: id,
+      accion: 'UPDATE',
+      valorAnterior: old,
+      valorNuevo: { ...dto, precios: dto.precios },
+    });
+
     return this.serviciosRepo.findOne({
       where: { id },
       relations: { preciosReferenciales: true },
@@ -223,6 +247,13 @@ export class ProfesionalesService {
 
   async removeServicio(id: number) {
     const servicio = await this.serviciosRepo.findOneOrFail({ where: { id } });
+    this.audit.log({
+      usuarioId: this.ctx.get().usuarioId,
+      tabla: 'Servicios',
+      registroId: id,
+      accion: 'DELETE',
+      valorAnterior: { nombre: servicio.nombre, descripcion: servicio.descripcion, duracion_estimada_min: servicio.duracion_estimada_min },
+    });
     return this.serviciosRepo.remove(servicio);
   }
 }
