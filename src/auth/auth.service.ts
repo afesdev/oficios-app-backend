@@ -152,7 +152,7 @@ export class AuthService {
     const profesional = await this.profesionalesService.findByUsuario(usuarioId);
     if (!profesional) throw new NotFoundException('Perfil profesional no encontrado');
 
-    const { servicios, horarios, enlaces, ...basic } = dto;
+    const { servicios, horarios, enlaces, ubicaciones, ...basic } = dto;
 
     if (Object.keys(basic).length > 0) {
       Object.assign(profesional, basic);
@@ -189,13 +189,22 @@ export class AuthService {
       }
     }
 
+    if (ubicaciones) {
+      await this.profesionalesService['ubicacionesRepo'].delete({ profesional_id: profesional.id });
+      if (ubicaciones.length > 0) {
+        await this.profesionalesService['ubicacionesRepo'].insert(
+          ubicaciones.map((u) => ({ ...u, profesional_id: profesional.id })),
+        );
+      }
+    }
+
     this.logger.log(`Perfil profesional actualizado: usuario=${usuarioId}`);
     this.audit.log({
       usuarioId,
       tabla: 'Profesionales',
       registroId: profesional.id,
       accion: 'UPDATE',
-      valorNuevo: { ...basic, servicios, horarios, enlaces },
+      valorNuevo: { ...basic, servicios, horarios, enlaces, ubicaciones },
     });
 
     return this.profesionalesService.findByUsuario(usuarioId);

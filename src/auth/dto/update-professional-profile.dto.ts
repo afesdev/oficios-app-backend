@@ -50,6 +50,44 @@ class EnlaceDto {
   url: string;
 }
 
+class UbicacionDto {
+  @ApiPropertyOptional({ example: 'Cra 15 #85-60' })
+  @IsString()
+  @MaxLength(255)
+  direccion: string;
+
+  @ApiPropertyOptional({ example: 'Bogotá' })
+  @IsString()
+  @MaxLength(100)
+  ciudad: string;
+
+  @ApiPropertyOptional({ example: 'Cundinamarca' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  estado?: string;
+
+  @ApiPropertyOptional({ example: 'Colombia', default: 'Colombia' })
+  @IsString()
+  @MaxLength(100)
+  pais: string;
+
+  @ApiPropertyOptional({ example: 4.7110 })
+  @IsOptional()
+  @IsNumber()
+  latitud?: number;
+
+  @ApiPropertyOptional({ example: -74.0721 })
+  @IsOptional()
+  @IsNumber()
+  longitud?: number;
+
+  @ApiPropertyOptional({ example: true, default: false })
+  @IsOptional()
+  @IsBoolean()
+  es_principal?: boolean;
+}
+
 export class UpdateProfessionalProfileDto {
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
@@ -93,4 +131,11 @@ export class UpdateProfessionalProfileDto {
   @ValidateNested({ each: true })
   @Type(() => EnlaceDto)
   enlaces?: EnlaceDto[];
+
+  @ApiPropertyOptional({ type: [UbicacionDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UbicacionDto)
+  ubicaciones?: UbicacionDto[];
 }
