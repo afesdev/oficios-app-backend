@@ -81,8 +81,8 @@ async function seed() {
       const catId = cat[0]?.id;
 
       await ds.query(
-        `INSERT INTO Profesionales (usuario_id, categoria_id, descripcion_perfil, ciudad, disponibilidad_inmediata, cobertura_km)
-         VALUES (@0, @1, 'Especialista con más de 10 años de experiencia. Trabajos garantizados.', 'Ciudad de México', 1, 30)`,
+        `INSERT INTO Profesionales (usuario_id, categoria_id, descripcion_perfil, ciudad, cobertura_km)
+         VALUES (@0, @1, 'Especialista con más de 10 años de experiencia. Trabajos garantizados.', 'Ciudad de México', 30)`,
         [profUserId, catId],
       );
       const profId = (await ds.query(`SELECT SCOPE_IDENTITY() AS id`))[0]?.id;

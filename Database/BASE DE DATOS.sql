@@ -75,7 +75,6 @@ CREATE TABLE Profesionales (
     descripcion_perfil NVARCHAR(MAX) NULL,
     foto_perfil_url NVARCHAR(2083) NULL,
     ciudad NVARCHAR(100) NOT NULL,
-    disponibilidad_inmediata BIT NOT NULL CONSTRAINT DF_Profesionales_Disp DEFAULT 1,
     cobertura_km DECIMAL(6,2) NULL,
     CONSTRAINT PK_Profesionales PRIMARY KEY CLUSTERED (id),
     CONSTRAINT UQ_Profesionales_Usuario UNIQUE (usuario_id),
@@ -194,7 +193,7 @@ CREATE TABLE PreciosReferenciales (
     servicio_id INT NOT NULL,
     precio_min DECIMAL(10,2) NOT NULL,
     precio_max DECIMAL(10,2) NULL,
-    moneda NVARCHAR(3) NOT NULL DEFAULT 'MXN',
+    moneda NVARCHAR(3) NOT NULL DEFAULT 'COP',
     descripcion_precio NVARCHAR(255) NULL,
     CONSTRAINT FK_Precios_Servicios FOREIGN KEY (servicio_id)
         REFERENCES Servicios(id) ON DELETE CASCADE
@@ -223,7 +222,7 @@ CREATE TABLE Ubicaciones (
     direccion NVARCHAR(255) NOT NULL,
     ciudad NVARCHAR(100) NOT NULL,
     estado NVARCHAR(100) NULL,
-    pais NVARCHAR(100) NOT NULL DEFAULT 'México',
+    pais NVARCHAR(100) NOT NULL DEFAULT 'Colombia',
     latitud DECIMAL(10,7) NULL,
     longitud DECIMAL(10,7) NULL,
     es_principal BIT NOT NULL DEFAULT 0,
@@ -307,7 +306,7 @@ GO
 
 CREATE NONCLUSTERED INDEX IX_Profesionales_Ciudad_Categoria
 ON Profesionales (ciudad, categoria_id)
-INCLUDE (foto_perfil_url, disponibilidad_inmediata);
+INCLUDE (foto_perfil_url);
 GO
 
 CREATE NONCLUSTERED INDEX IX_Publicaciones_Profesional

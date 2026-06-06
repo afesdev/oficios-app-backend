@@ -18,7 +18,7 @@ export class Ubicacione {
   @Column({ length: 100, nullable: true })
   estado: string;
 
-  @Column({ length: 100, default: 'México' })
+  @Column({ length: 100, default: 'Colombia' })
   pais: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })

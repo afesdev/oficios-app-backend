@@ -7,6 +7,7 @@ import { ProfesionalesService } from './profesionales.service';
 import { CreateProfesionalDto } from './dto/create-profesional.dto';
 import { UpdateProfesionalDto } from './dto/update-profesional.dto';
 import { SearchProfesionalDto } from './dto/search-profesional.dto';
+import { SearchCercaDto } from './dto/search-cerca.dto';
 
 @ApiTags('Profesionales')
 @Controller('profesionales')
@@ -29,6 +30,13 @@ export class ProfesionalesController {
   async getFrequentCities() {
     const data = await this.service.getFrequentCities();
     return { data };
+  }
+
+  @Get('cerca')
+  @Public()
+  @ApiOperation({ summary: 'Profesionales cercanos por geolocalización' })
+  searchNearby(@Query() query: SearchCercaDto) {
+    return this.service.searchNearby(query.lat, query.lng, query.radio_km, query);
   }
 
   @Get(':id')
@@ -57,5 +65,28 @@ export class ProfesionalesController {
   @ApiOperation({ summary: 'Eliminar perfil profesional' })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
+  }
+
+  // --- Servicios ---
+
+  @Post(':id/servicios')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Agregar un servicio al profesional' })
+  addServicio(@Param('id', ParseIntPipe) id: number, @Body() dto: any) {
+    return this.service.addServicio(id, dto);
+  }
+
+  @Patch('servicios/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar un servicio' })
+  updateServicio(@Param('id', ParseIntPipe) id: number, @Body() dto: any) {
+    return this.service.updateServicio(id, dto);
+  }
+
+  @Delete('servicios/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Eliminar un servicio' })
+  removeServicio(@Param('id', ParseIntPipe) id: number) {
+    return this.service.removeServicio(id);
   }
 }

@@ -55,7 +55,6 @@ export class AuthService {
         usuario_id: usuario.id,
         categoria_id: 1,
         ciudad: 'Por definir',
-        disponibilidad_inmediata: true,
       });
       await this.profesionalRepo.save(prof);
       this.logger.log(`Perfil profesional creado automáticamente: profesional_id=${prof.id}`);
@@ -105,10 +104,11 @@ export class AuthService {
       relations: {
         profesional: {
           categoria: true,
-          servicios: true,
+          servicios: { preciosReferenciales: true },
           horariosAtencion: true,
           enlacesProfesionales: true,
           verificacion: true,
+          ubicaciones: true,
         },
       },
     });

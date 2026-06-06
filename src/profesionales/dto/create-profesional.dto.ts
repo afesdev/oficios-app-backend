@@ -26,11 +26,6 @@ export class CreateProfesionalDto {
   @MaxLength(100)
   ciudad: string;
 
-  @ApiPropertyOptional({ example: true })
-  @IsOptional()
-  @IsBoolean()
-  disponibilidad_inmediata?: boolean;
-
   @ApiPropertyOptional({ example: 30 })
   @IsOptional()
   @IsNumber()

@@ -15,7 +15,7 @@ export class PreciosReferenciale {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   precio_max: number;
 
-  @Column({ length: 3, default: 'MXN' })
+  @Column({ length: 3, default: 'COP' })
   moneda: string;
 
   @Column({ length: 255, nullable: true })
