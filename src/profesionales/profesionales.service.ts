@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -16,6 +16,7 @@ import { UpdateServicioDto } from './dto/update-servicio.dto';
 
 @Injectable()
 export class ProfesionalesService {
+  private readonly logger = new Logger(ProfesionalesService.name);
   constructor(
     @InjectRepository(Profesionale)
     private readonly repo: Repository<Profesionale>,
@@ -103,33 +104,49 @@ export class ProfesionalesService {
   async searchNearby(lat: number, lng: number, radioKm: number, pagination: PaginationDto) {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 50;
-    const skip = (page - 1) * limit;
 
-    const result = await this.repo
+    const all = await this.repo
       .createQueryBuilder('prof')
       .leftJoinAndSelect('prof.categoria', 'cat')
       .leftJoinAndSelect('prof.usuario', 'usr')
       .leftJoinAndSelect('prof.ubicaciones', 'ub')
       .where('ub.latitud IS NOT NULL AND ub.longitud IS NOT NULL')
-      .andWhere(
-        `(6371 * ACOS(
-          COS(RADIANS(:lat)) * COS(RADIANS(CAST(ub.latitud AS FLOAT))) *
-          COS(RADIANS(CAST(ub.longitud AS FLOAT)) - RADIANS(:lng)) +
-          SIN(RADIANS(:lat)) * SIN(RADIANS(CAST(ub.latitud AS FLOAT)))
-        )) <= :radio`,
-        { lat, lng, radio: radioKm },
-      )
-      .orderBy('prof.id', 'DESC')
-      .skip(skip)
-      .take(limit)
-      .getManyAndCount();
+      .getMany();
 
-    const [data, total] = result;
+    this.logger.debug(`searchNearby: total professionals with ubicaciones: ${all.length}`);
+
+    const matching = all.filter((prof) => {
+      return prof.ubicaciones?.some((ub) => {
+        if (ub.latitud == null || ub.longitud == null) return false;
+        const dist = this.haversine(lat, lng, ub.latitud, ub.longitud);
+        return dist <= radioKm;
+      });
+    });
+
+    this.logger.debug(`searchNearby: after haversine filter: ${matching.length}`);
+
+    const total = matching.length;
+    const skip = (page - 1) * limit;
+    const data = matching.slice(skip, skip + limit);
 
     return {
       data,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  private haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = this.toRad(lat2 - lat1);
+    const dLng = this.toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
+      Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  private toRad(deg: number): number {
+    return deg * (Math.PI / 180);
   }
 
   create(dto: CreateProfesionalDto) {
