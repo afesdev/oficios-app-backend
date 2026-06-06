@@ -115,6 +115,15 @@ export class ProfesionalesService {
 
     this.logger.debug(`searchNearby: total professionals with ubicaciones: ${all.length}`);
 
+    // Debug: contar cuántos profesionales existen en total y cuántas ubicaciones
+    const totalProfs = await this.repo.count();
+    const totalUbs = await this.ubicacionesRepo.count();
+    const ubsWithCoords = await this.ubicacionesRepo
+      .createQueryBuilder('ub')
+      .where('ub.latitud IS NOT NULL AND ub.longitud IS NOT NULL')
+      .getCount();
+    this.logger.debug(`searchNearby DB stats: profesionales=${totalProfs}, ubicaciones=${totalUbs}, ubs_with_coords=${ubsWithCoords}`);
+
     const matching = all.filter((prof) => {
       return prof.ubicaciones?.some((ub) => {
         if (ub.latitud == null || ub.longitud == null) return false;

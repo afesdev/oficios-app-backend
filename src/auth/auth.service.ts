@@ -190,6 +190,7 @@ export class AuthService {
     }
 
     if (ubicaciones) {
+      this.logger.debug(`ubicaciones count: ${ubicaciones.length}, has lat: ${ubicaciones.some(u => u.latitud != null)}`);
       await this.profesionalesService['ubicacionesRepo'].delete({ profesional_id: profesional.id });
       if (ubicaciones.length > 0) {
         await this.profesionalesService['ubicacionesRepo'].insert(
