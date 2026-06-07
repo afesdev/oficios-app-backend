@@ -216,9 +216,9 @@ export class PromocionesService {
     });
     await this.pagoRepo.save(pago);
 
-    // Pasar promoción a pendiente_aprobacion
+    // Pasar promoción a pendiente_aprobacion (update directo para no afectar relaciones cargadas)
+    await this.promoRepo.update(promocionId, { estado: 'pendiente_aprobacion' });
     promo.estado = 'pendiente_aprobacion';
-    await this.promoRepo.save(promo);
 
     this.audit.log({
       usuarioId,
@@ -286,13 +286,19 @@ export class PromocionesService {
       await this.pagoRepo.save(pago);
     }
 
-    // Activar promoción
+    // Activar promoción (update directo para no afectar relaciones cargadas)
+    await this.promoRepo.update(promocionId, {
+      estado: 'activa',
+      activo: true,
+      aprobado_por: adminId,
+      fecha_inicio: ahora,
+      fecha_fin: fechaFin,
+    });
     promo.estado = 'activa';
     promo.activo = true;
     promo.aprobado_por = adminId;
     promo.fecha_inicio = ahora;
     promo.fecha_fin = fechaFin;
-    await this.promoRepo.save(promo);
 
     this.audit.log({
       usuarioId: adminId,
@@ -357,10 +363,14 @@ export class PromocionesService {
       })
       .execute();
 
+    await this.promoRepo.update(promocionId, {
+      estado: 'rechazada',
+      activo: false,
+      aprobado_por: adminId,
+    });
     promo.estado = 'rechazada';
     promo.activo = false;
     promo.aprobado_por = adminId;
-    await this.promoRepo.save(promo);
 
     this.audit.log({
       usuarioId: adminId,
@@ -418,9 +428,9 @@ export class PromocionesService {
       );
     }
 
+    await this.promoRepo.update(promocionId, { estado: 'cancelada', activo: false });
     promo.estado = 'cancelada';
     promo.activo = false;
-    await this.promoRepo.save(promo);
 
     this.audit.log({
       usuarioId,
