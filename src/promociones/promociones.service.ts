@@ -113,7 +113,11 @@ export class PromocionesService {
   // CREAR PROMOCIÓN
   // ────────────────────────────────────────────────────────────────────
 
-  async create(profesionalId: number, dto: CreatePromocionDto): Promise<Promocion> {
+  async create(
+    profesionalId: number,
+    usuarioId: number,
+    dto: CreatePromocionDto,
+  ): Promise<Promocion> {
     // Validar plan
     const plan = await this.planRepo.findOneBy({ id: dto.plan_id, activo: true });
     if (!plan) throw new NotFoundException('Plan de promoción no encontrado o inactivo');
@@ -161,7 +165,7 @@ export class PromocionesService {
     await this.crearDetalle(promo.id, dto);
 
     this.audit.log({
-      usuarioId: profesionalId,
+      usuarioId,
       tabla: 'Promociones',
       registroId: promo.id,
       accion: 'INSERT',
@@ -178,6 +182,7 @@ export class PromocionesService {
   async registrarPago(
     promocionId: number,
     profesionalId: number,
+    usuarioId: number,
     dto: RegistrarPagoDto,
   ): Promise<{ pago: PagoPromocion; promocion: Promocion }> {
     const promo = await this.findOne(promocionId);
@@ -216,7 +221,7 @@ export class PromocionesService {
     await this.promoRepo.save(promo);
 
     this.audit.log({
-      usuarioId: profesionalId,
+      usuarioId,
       tabla: 'PagosPromociones',
       registroId: pago.id,
       accion: 'INSERT',
@@ -385,7 +390,11 @@ export class PromocionesService {
   // CANCELAR (profesional cancela la suya)
   // ────────────────────────────────────────────────────────────────────
 
-  async cancelar(promocionId: number, profesionalId: number): Promise<Promocion> {
+  async cancelar(
+    promocionId: number,
+    profesionalId: number,
+    usuarioId: number,
+  ): Promise<Promocion> {
     const promo = await this.findOne(promocionId);
 
     if (promo.profesional_id !== profesionalId) {
@@ -402,7 +411,7 @@ export class PromocionesService {
     await this.promoRepo.save(promo);
 
     this.audit.log({
-      usuarioId: profesionalId,
+      usuarioId,
       tabla: 'Promociones',
       registroId: promocionId,
       accion: 'UPDATE',

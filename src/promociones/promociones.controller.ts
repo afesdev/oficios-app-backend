@@ -79,7 +79,7 @@ export class PromocionesController {
     @Body() dto: CreatePromocionDto,
   ) {
     const profesionalId = user.profesional?.id ?? (user as any).profesional_id;
-    return this.service.create(profesionalId, dto);
+    return this.service.create(profesionalId, user.id, dto);
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ export class PromocionesController {
     @Body() dto: RegistrarPagoDto,
   ) {
     const profesionalId = user.profesional?.id ?? (user as any).profesional_id;
-    return this.service.registrarPago(id, profesionalId, dto);
+    return this.service.registrarPago(id, profesionalId, user.id, dto);
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -117,7 +117,7 @@ export class PromocionesController {
     @CurrentUser() user: Usuario,
   ) {
     const profesionalId = user.profesional?.id ?? (user as any).profesional_id;
-    return this.service.cancelar(id, profesionalId);
+    return this.service.cancelar(id, profesionalId, user.id);
   }
 
   // ──────────────────────────────────────────────────────────────────
