@@ -9,6 +9,11 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 import { paginate, PaginatedResult } from '../common/utils/paginate';
 import { LikesService } from '../likes/likes.service';
 import { ResenasService } from '../resenas/resenas.service';
+import { Resena } from '../resenas/resena.entity';
+import { LikePublicacion } from '../likes/like-publicacion.entity';
+import { PromocionPublicacion } from '../promociones/entities/promocion-publicacion.entity';
+import { AuditService } from '../auditoria/audit.service';
+import { AuditContextService } from '../auditoria/audit-context.service';
 
 @Injectable()
 export class PublicacionesService {
@@ -19,8 +24,16 @@ export class PublicacionesService {
     private readonly repo: Repository<Publicacione>,
     @InjectRepository(FotosPublicacione)
     private readonly fotosRepo: Repository<FotosPublicacione>,
+    @InjectRepository(Resena)
+    private readonly resenasRepo: Repository<Resena>,
+    @InjectRepository(LikePublicacion)
+    private readonly likesRepo: Repository<LikePublicacion>,
+    @InjectRepository(PromocionPublicacion)
+    private readonly promoPubRepo: Repository<PromocionPublicacion>,
     private readonly likesService: LikesService,
     private readonly resenasService: ResenasService,
+    private readonly audit: AuditService,
+    private readonly auditCtx: AuditContextService,
   ) {}
 
   /** Enriquece una lista paginada de publicaciones con likes, user_liked y ratings (batch). */
@@ -143,6 +156,14 @@ export class PublicacionesService {
     }
 
     this.logger.log(`Publicación creada: id=${pub.id}, profesional_id=${profesional_id}`);
+    const ctx = this.auditCtx.get();
+    this.audit.log({
+      usuarioId: ctx.usuarioId,
+      tabla: 'Publicaciones',
+      registroId: pub.id,
+      accion: 'INSERT',
+      valorNuevo: { titulo: pubData.titulo, profesional_id },
+    });
     return this.findOne(pub.id);
   }
 
@@ -164,13 +185,37 @@ export class PublicacionesService {
       }
     }
 
+    const ctx = this.auditCtx.get();
+    this.audit.log({
+      usuarioId: ctx.usuarioId,
+      tabla: 'Publicaciones',
+      registroId: id,
+      accion: 'UPDATE',
+      valorAnterior: { titulo: (pub as any)._prevTitulo },
+      valorNuevo: { titulo: pubData.titulo },
+    });
+
     return this.findOne(id);
   }
 
   async remove(id: number) {
     const pub = await this.repo.findOneOrFail({ where: { id } })
       .catch(() => { throw new NotFoundException('Publicación no encontrada'); });
+
+    await this.fotosRepo.delete({ publicacion: { id } });
+    await this.resenasRepo.delete({ publicacion_id: id });
+    await this.likesRepo.delete({ publicacion_id: id });
+    await this.promoPubRepo.delete({ publicacion_id: id });
+
     this.logger.warn(`Publicación eliminada: id=${pub.id}, titulo="${pub.titulo}"`);
+    const ctx = this.auditCtx.get();
+    this.audit.log({
+      usuarioId: ctx.usuarioId,
+      tabla: 'Publicaciones',
+      registroId: id,
+      accion: 'DELETE',
+      valorAnterior: { titulo: pub.titulo, descripcion: pub.descripcion, imagen_url: pub.imagen_url },
+    });
     return this.repo.remove(pub);
   }
 }

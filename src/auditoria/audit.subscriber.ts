@@ -19,6 +19,9 @@ const AUDITED_TABLES = new Set([
   'Favoritos',
   'HistorialContactos',
   'LikesPublicaciones',
+  'Promociones',
+  'PagosPromociones',
+  'Categorias',
 ]);
 
 @Injectable()

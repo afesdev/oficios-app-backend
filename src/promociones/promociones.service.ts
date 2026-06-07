@@ -284,6 +284,22 @@ export class PromocionesService {
         fecha_pago: ahora,
       });
       await this.pagoRepo.save(pago);
+      this.audit.log({
+        usuarioId: adminId,
+        tabla: 'PagosPromociones',
+        registroId: pago.id,
+        accion: 'INSERT',
+        valorNuevo: { monto: plan.precio, metodo_pago: 'manual', estado: 'aprobado' },
+      });
+    } else {
+      this.audit.log({
+        usuarioId: adminId,
+        tabla: 'PagosPromociones',
+        registroId: promocionId,
+        accion: 'UPDATE',
+        valorAnterior: { estado: 'pendiente' },
+        valorNuevo: { estado: 'aprobado', fecha_pago: ahora },
+      });
     }
 
     // Activar promoción (update directo para no afectar relaciones cargadas)
@@ -353,7 +369,7 @@ export class PromocionesService {
     }
 
     // Rechazar el pago si existe
-    await this.pagoRepo
+    const pagoUpdate = await this.pagoRepo
       .createQueryBuilder()
       .update(PagoPromocion)
       .set({ estado: 'rechazado', notas: dto.motivo })
@@ -362,6 +378,17 @@ export class PromocionesService {
         estado: 'pendiente',
       })
       .execute();
+
+    if (pagoUpdate.affected && pagoUpdate.affected > 0) {
+      this.audit.log({
+        usuarioId: adminId,
+        tabla: 'PagosPromociones',
+        registroId: promocionId,
+        accion: 'UPDATE',
+        valorAnterior: { estado: 'pendiente' },
+        valorNuevo: { estado: 'rechazado', motivo: dto.motivo },
+      });
+    }
 
     await this.promoRepo.update(promocionId, {
       estado: 'rechazada',
@@ -508,7 +535,18 @@ export class PromocionesService {
       .andWhere('fecha_fin < :ahora', { ahora: new Date() })
       .execute();
 
-    return result.affected ?? 0;
+    const affected = result.affected ?? 0;
+    if (affected > 0) {
+      this.audit.log({
+        usuarioId: null,
+        tabla: 'Promociones',
+        registroId: 0,
+        accion: 'BATCH_EXPIRE',
+        valorNuevo: { afectadas: affected, ejecutado_en: new Date().toISOString() },
+      });
+    }
+
+    return affected;
   }
 
   // ────────────────────────────────────────────────────────────────────

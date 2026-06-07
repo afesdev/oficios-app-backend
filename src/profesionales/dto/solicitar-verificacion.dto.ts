@@ -14,5 +14,10 @@ export class SolicitarVerificacionDto {
   @IsString()
   @IsOptional()
   @MaxLength(2083)
+  documento_trasero_url?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(2083)
   selfie_url?: string;
 }

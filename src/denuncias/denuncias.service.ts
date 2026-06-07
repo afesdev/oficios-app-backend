@@ -8,6 +8,8 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 import { paginate, PaginatedResult } from '../common/utils/paginate';
 import { AuditService } from '../auditoria/audit.service';
 import { MailService } from '../mail/mail.service';
+import { FirebaseFcmService } from '../firebase/firebase-fcm.service';
+import { NotificacionePush } from '../usuarios/notificacione-push.entity';
 
 @Injectable()
 export class DenunciasService {
@@ -16,9 +18,27 @@ export class DenunciasService {
   constructor(
     @InjectRepository(Denuncia)
     private readonly repo: Repository<Denuncia>,
+    @InjectRepository(NotificacionePush)
+    private readonly pushRepo: Repository<NotificacionePush>,
     private readonly audit: AuditService,
     private readonly mail: MailService,
+    private readonly fcm: FirebaseFcmService,
   ) {}
+
+  private async notificarDenunciaResuelta(usuarioId: number, estado: string): Promise<void> {
+    const pushRows = await this.pushRepo.find({ where: { usuario_id: usuarioId, activo: true } });
+    const tokens = pushRows.map((r) => r.token);
+    if (!tokens.length) return;
+    const aprobada = estado === 'resuelto';
+    this.fcm.sendToTokens(
+      tokens,
+      aprobada ? '✅ Denuncia resuelta' : 'ℹ️ Denuncia procesada',
+      aprobada
+        ? 'Tu denuncia fue revisada y resuelta por el equipo de OficiosApp.'
+        : 'Tu denuncia fue revisada pero no encontramos una infracción. Gracias por reportar.',
+      { tipo: 'denuncia_resuelta', estado },
+    ).catch(() => {});
+  }
 
   findAll(pagination: PaginationDto): Promise<PaginatedResult<Denuncia>> {
     return paginate(this.repo, pagination, undefined, { fecha_creacion: 'DESC' });
@@ -74,14 +94,18 @@ export class DenunciasService {
       valorNuevo: { estado: (denuncia as any).estado },
     });
 
-    // Notificar al denunciante por email (fire-and-forget)
-    if (denuncia.denunciante?.email) {
-      this.mail.sendDenunciaResuelta({
-        to: denuncia.denunciante.email,
-        nombre: denuncia.denunciante.nombre_completo,
-        estado: (denuncia as any).estado,
-        notasAdmin: (denuncia as any).notas_admin ?? undefined,
-      }).catch(() => {});
+    // Notificar al denunciante por email y push (fire-and-forget)
+    if (denuncia.denunciante) {
+      const u = denuncia.denunciante;
+      if (u.email) {
+        this.mail.sendDenunciaResuelta({
+          to: u.email,
+          nombre: u.nombre_completo,
+          estado: (denuncia as any).estado,
+          notasAdmin: (denuncia as any).notas_admin ?? undefined,
+        }).catch(() => {});
+      }
+      this.notificarDenunciaResuelta(u.id, (denuncia as any).estado);
     }
 
     return denuncia;

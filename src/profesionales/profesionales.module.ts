@@ -12,15 +12,19 @@ import { VerificacionesController } from './verificaciones.controller';
 import { ProfesionalesService } from './profesionales.service';
 import { AuditoriaModule } from '../auditoria/auditoria.module';
 import { MailModule } from '../mail/mail.module';
+import { FirebaseModule } from '../firebase/firebase.module';
+import { NotificacionePush } from '../usuarios/notificacione-push.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Profesionale, Servicio, PreciosReferenciale,
       HorarioAtencion, Ubicacione, EnlaceProfesional, Verificacione,
+      NotificacionePush,
     ]),
     AuditoriaModule,
     MailModule,
+    FirebaseModule,
   ],
   controllers: [ProfesionalesController, VerificacionesController],
   providers: [ProfesionalesService],

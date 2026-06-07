@@ -9,6 +9,8 @@ import { paginate } from '../common/utils/paginate';
 import { AuditService } from '../auditoria/audit.service';
 import { MailService } from '../mail/mail.service';
 import { Profesionale } from '../profesionales/profesional.entity';
+import { NotificacionePush } from '../usuarios/notificacione-push.entity';
+import { FirebaseFcmService } from '../firebase/firebase-fcm.service';
 
 @Injectable()
 export class ResenasService {
@@ -19,9 +21,28 @@ export class ResenasService {
     private readonly repo: Repository<Resena>,
     @InjectRepository(Profesionale)
     private readonly profRepo: Repository<Profesionale>,
+    @InjectRepository(NotificacionePush)
+    private readonly pushRepo: Repository<NotificacionePush>,
     private readonly audit: AuditService,
     private readonly mail: MailService,
+    private readonly fcm: FirebaseFcmService,
   ) {}
+
+  private async notificarNuevaResena(profesionalId: number, clienteNombre: string, puntuacion: number): Promise<void> {
+    const prof = await this.profRepo.findOne({ where: { id: profesionalId }, relations: { usuario: true } });
+    if (!prof?.usuario) return;
+    const pushRows = await this.pushRepo.find({ where: { usuario_id: prof.usuario.id, activo: true } });
+    const tokens = pushRows.map((r) => r.token);
+    if (tokens.length) {
+      const estrellas = '⭐'.repeat(Math.min(puntuacion, 5));
+      this.fcm.sendToTokens(
+        tokens,
+        '⭐ Nueva reseña recibida',
+        `${clienteNombre} te dejó ${estrellas} (${puntuacion}/5)`,
+        { tipo: 'nueva_resena', profesional_id: String(profesionalId) },
+      ).catch(() => {});
+    }
+  }
 
   findByPublicacion(publicacionId: number, pagination: PaginationDto) {
     return paginate(
@@ -61,22 +82,21 @@ export class ResenasService {
     // Recargar con relación cliente para que el cliente reciba nombre e imagen
     const savedRel = await this.repo.findOne({ where: { id: saved.id }, relations: { cliente: true } });
 
-    // Notificar al profesional por email (fire-and-forget)
+    // Notificar al profesional por email y push (fire-and-forget)
     if (savedRel?.cliente) {
-      this.profRepo.findOne({
-        where: { id: profesionalId },
-        relations: { usuario: true },
-      }).then((prof) => {
+      const clienteNombre = savedRel.cliente.nombre_completo;
+      this.profRepo.findOne({ where: { id: profesionalId }, relations: { usuario: true } }).then((prof) => {
         if (prof?.usuario?.email) {
           this.mail.sendNewReview({
             to: prof.usuario.email,
             profesionalNombre: prof.usuario.nombre_completo,
-            clienteNombre: savedRel.cliente.nombre_completo,
+            clienteNombre,
             puntuacion: dto.puntuacion,
             comentario: dto.comentario ?? undefined,
           }).catch(() => {});
         }
       }).catch(() => {});
+      this.notificarNuevaResena(profesionalId, clienteNombre, dto.puntuacion);
     }
 
     return savedRel;
@@ -143,26 +163,25 @@ export class ResenasService {
       },
     });
 
-    // Notificar al profesional por email (fire-and-forget)
+    // Notificar al profesional por email y push (fire-and-forget)
     const full = await this.repo.findOne({
       where: { id: resena.id },
       relations: { cliente: true },
     });
     if (full?.cliente) {
-      this.profRepo.findOne({
-        where: { id: resena.profesional_id },
-        relations: { usuario: true },
-      }).then((prof) => {
+      const clienteNombre = full.cliente.nombre_completo;
+      this.profRepo.findOne({ where: { id: resena.profesional_id }, relations: { usuario: true } }).then((prof) => {
         if (prof?.usuario?.email) {
           this.mail.sendNewReview({
             to: prof.usuario.email,
             profesionalNombre: prof.usuario.nombre_completo,
-            clienteNombre: full.cliente!.nombre_completo,
+            clienteNombre,
             puntuacion: full.puntuacion,
             comentario: full.comentario ?? undefined,
           }).catch(() => {});
         }
       }).catch(() => {});
+      this.notificarNuevaResena(resena.profesional_id, clienteNombre, full.puntuacion);
     }
 
     return resena;

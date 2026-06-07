@@ -11,6 +11,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { Usuario } from '../usuarios/usuario.entity';
 import { MailService } from '../mail/mail.service';
+import { FirebaseFcmService } from '../firebase/firebase-fcm.service';
+import { NotificacionePush } from '../usuarios/notificacione-push.entity';
 
 @ApiTags('Verificaciones')
 @Controller('verificaciones')
@@ -18,8 +20,27 @@ export class VerificacionesController {
   constructor(
     @InjectRepository(Verificacione)
     private readonly repo: Repository<Verificacione>,
+    @InjectRepository(NotificacionePush)
+    private readonly pushRepo: Repository<NotificacionePush>,
     private readonly mail: MailService,
+    private readonly fcm: FirebaseFcmService,
   ) {}
+
+  private async notificarVerificacion(usuarioId: number, estado: string): Promise<void> {
+    const pushRows = await this.pushRepo.find({ where: { usuario_id: usuarioId, activo: true } });
+    const tokens = pushRows.map((r) => r.token);
+    if (!tokens.length) return;
+
+    const aprobado = estado === 'aprobado';
+    this.fcm.sendToTokens(
+      tokens,
+      aprobado ? '✅ Verificación aprobada' : '❌ Verificación rechazada',
+      aprobado
+        ? 'Tu identidad ha sido verificada exitosamente.'
+        : 'Tu solicitud de verificación fue rechazada. Revisa las notas en tu perfil.',
+      { tipo: 'verificacion', estado },
+    ).catch(() => {});
+  }
 
   @Post('solicitar')
   @ApiBearerAuth()
@@ -94,14 +115,18 @@ export class VerificacionesController {
     v.fecha_resolucion = new Date();
     const saved = await this.repo.save(v);
 
-    // Notificar al profesional
-    if (saved.profesional?.usuario?.email) {
-      this.mail.sendVerificacionResuelta({
-        to: saved.profesional.usuario.email,
-        nombre: saved.profesional.usuario.nombre_completo,
-        estado: saved.estado,
-        notasAdmin: saved.notas_admin ?? undefined,
-      }).catch(() => {});
+    // Notificar al profesional por email y push (fire-and-forget)
+    if (saved.profesional?.usuario) {
+      const u = saved.profesional.usuario;
+      if (u.email) {
+        this.mail.sendVerificacionResuelta({
+          to: u.email,
+          nombre: u.nombre_completo,
+          estado: saved.estado,
+          notasAdmin: saved.notas_admin ?? undefined,
+        }).catch(() => {});
+      }
+      this.notificarVerificacion(u.id, saved.estado);
     }
 
     return saved;
