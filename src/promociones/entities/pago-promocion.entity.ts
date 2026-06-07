@@ -4,7 +4,7 @@ import {
 import { Promocion } from './promocion.entity';
 import { Profesionale } from '../../profesionales/profesional.entity';
 
-export type MetodoPago = 'tarjeta' | 'nequi' | 'pse' | 'efectivo' | 'manual';
+export type MetodoPago = 'tarjeta' | 'nequi' | 'pse' | 'transferencia' | 'efectivo' | 'manual';
 export type EstadoPago = 'pendiente' | 'aprobado' | 'rechazado' | 'reembolsado';
 
 @Entity('PagosPromociones')
