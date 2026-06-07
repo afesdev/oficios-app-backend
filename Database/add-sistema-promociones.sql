@@ -223,7 +223,7 @@ BEGIN
 
         CONSTRAINT CK_PagosPromociones_Monto CHECK (monto > 0),
         CONSTRAINT CK_PagosPromociones_Metodo CHECK (
-            metodo_pago IN ('tarjeta', 'nequi', 'pse', 'efectivo', 'manual')
+            metodo_pago IN ('tarjeta', 'nequi', 'pse', 'transferencia', 'efectivo', 'manual')
         ),
         CONSTRAINT CK_PagosPromociones_Estado CHECK (
             estado IN ('pendiente', 'aprobado', 'rechazado', 'reembolsado')

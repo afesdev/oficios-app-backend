@@ -8,7 +8,7 @@ export class RegistrarPagoDto {
   @IsPositive()
   monto: number;
 
-  @ApiProperty({ enum: ['tarjeta', 'nequi', 'pse', 'efectivo', 'manual'] })
+  @ApiProperty({ enum: ['tarjeta', 'nequi', 'pse', 'transferencia', 'efectivo', 'manual'] })
   @IsEnum(['tarjeta', 'nequi', 'pse', 'transferencia', 'efectivo', 'manual'])
   metodo_pago: MetodoPago;
 
