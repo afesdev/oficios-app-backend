@@ -263,8 +263,8 @@ export class PromocionesService {
     const fechaFin = new Date(ahora);
     fechaFin.setDate(fechaFin.getDate() + plan.duracion_dias);
 
-    // Aprobar el pago pendiente
-    await this.pagoRepo
+    // Aprobar el pago pendiente o crear uno automático si no existe
+    const updateResult = await this.pagoRepo
       .createQueryBuilder()
       .update(PagoPromocion)
       .set({ estado: 'aprobado', fecha_pago: ahora })
@@ -273,6 +273,18 @@ export class PromocionesService {
         estado: 'pendiente',
       })
       .execute();
+
+    if (updateResult.affected === 0) {
+      const pago = this.pagoRepo.create({
+        promocion_id: promocionId,
+        profesional_id: promo.profesional_id,
+        monto: plan.precio,
+        metodo_pago: 'manual',
+        estado: 'aprobado',
+        fecha_pago: ahora,
+      });
+      await this.pagoRepo.save(pago);
+    }
 
     // Activar promoción
     promo.estado = 'activa';
