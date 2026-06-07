@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Delete, Body, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Public } from '../auth/public.decorator';
 import { ResenasService } from './resenas.service';
 import { CreateResenaDto } from './dto/create-resena.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -19,6 +20,7 @@ export class ResenasController {
   }
 
   @Get('promedio/:profesionalId')
+  @Public()
   @ApiOperation({ summary: 'Obtener puntuación promedio de un profesional' })
   getAverage(@Param('profesionalId', ParseIntPipe) profesionalId: number) {
     return this.service.getAverage(profesionalId);

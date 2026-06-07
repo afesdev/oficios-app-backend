@@ -7,6 +7,7 @@ import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { Usuario } from '../usuarios/usuario.entity';
 import { TokenRecuperacione } from '../usuarios/token-recuperacione.entity';
+import { NotificacionePush } from '../usuarios/notificacione-push.entity';
 import { Profesionale } from '../profesionales/profesional.entity';
 import { AuditService } from '../auditoria/audit.service';
 import { ProfesionalesService } from '../profesionales/profesionales.service';
@@ -16,6 +17,7 @@ import { UpdateProfessionalProfileDto } from './dto/update-professional-profile.
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { MailService } from '../mail/mail.service';
+import { FcmTokenDto } from './dto/fcm-token.dto';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +30,8 @@ export class AuthService {
     private readonly profesionalRepo: Repository<Profesionale>,
     @InjectRepository(TokenRecuperacione)
     private readonly tokenRepo: Repository<TokenRecuperacione>,
+    @InjectRepository(NotificacionePush)
+    private readonly fcmRepo: Repository<NotificacionePush>,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
@@ -282,6 +286,37 @@ export class AuthService {
     });
 
     return { mensaje: 'Contraseña restablecida exitosamente.' };
+  }
+
+  /** Registra o actualiza el token FCM del dispositivo actual */
+  async registrarFcmToken(usuarioId: number, dto: FcmTokenDto): Promise<void> {
+    // Si el token ya existe para este usuario, actualiza el último uso
+    const existing = await this.fcmRepo.findOne({
+      where: { usuario_id: usuarioId, token: dto.token },
+    });
+
+    if (existing) {
+      existing.ultimo_uso = new Date();
+      existing.activo = true;
+      await this.fcmRepo.save(existing);
+      return;
+    }
+
+    // Crear nuevo registro
+    const push = this.fcmRepo.create({
+      usuario_id: usuarioId,
+      token: dto.token,
+      plataforma: dto.plataforma,
+    });
+    await this.fcmRepo.save(push);
+  }
+
+  /** Obtiene los tokens FCM activos de un usuario */
+  async getFcmTokens(usuarioId: number): Promise<string[]> {
+    const tokens = await this.fcmRepo.find({
+      where: { usuario_id: usuarioId, activo: true },
+    });
+    return tokens.map((t) => t.token);
   }
 
   private generateToken(usuario: Usuario) {

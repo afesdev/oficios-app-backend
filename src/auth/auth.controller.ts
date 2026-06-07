@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto/register.dto';
@@ -6,6 +6,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateProfessionalProfileDto } from './dto/update-professional-profile.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { FcmTokenDto } from './dto/fcm-token.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Public } from './public.decorator';
 import { CurrentUser } from './current-user.decorator';
@@ -66,5 +67,14 @@ export class AuthController {
   @ApiOperation({ summary: 'Actualizar perfil profesional del usuario autenticado' })
   updateProfessionalProfile(@CurrentUser() user: Usuario, @Body() dto: UpdateProfessionalProfileDto) {
     return this.authService.updateProfessionalProfile(user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('fcm-token')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Registrar token FCM para notificaciones push' })
+  registrarFcmToken(@CurrentUser() user: Usuario, @Body() dto: FcmTokenDto) {
+    return this.authService.registrarFcmToken(user.id, dto);
   }
 }

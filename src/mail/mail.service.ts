@@ -100,6 +100,96 @@ export class MailService {
     }
   }
 
+  /** Notifica al administrador que hay una nueva promoción esperando aprobación */
+  async sendNuevaPromocion(opts: {
+    adminEmail: string;
+    profesionalNombre: string;
+    profesionalEmail: string;
+    tipo: string;
+    planNombre: string;
+    metodoPago: string;
+    monto: number;
+    promocionId: number;
+  }): Promise<void> {
+    const { error } = await this.resend.emails.send({
+      from: this.from,
+      to: opts.adminEmail,
+      subject: `🔔 Nueva promoción pendiente — ${opts.planNombre}`,
+      html: this.wrapLayout(`
+        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;">
+          Nueva promoción pendiente de aprobación
+        </h1>
+        <p style="margin:0 0 20px;font-size:15px;color:#6B7280;">
+          Un profesional ha registrado un pago y solicita aprobación.
+        </p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;">
+          <tr><td style="padding:10px 0;border-bottom:1px solid #F3F4F6;font-weight:600;width:40%;">Profesional</td><td style="padding:10px 0;border-bottom:1px solid #F3F4F6;">${opts.profesionalNombre}</td></tr>
+          <tr><td style="padding:10px 0;border-bottom:1px solid #F3F4F6;font-weight:600;">Correo</td><td style="padding:10px 0;border-bottom:1px solid #F3F4F6;">${opts.profesionalEmail}</td></tr>
+          <tr><td style="padding:10px 0;border-bottom:1px solid #F3F4F6;font-weight:600;">Plan</td><td style="padding:10px 0;border-bottom:1px solid #F3F4F6;">${opts.planNombre}</td></tr>
+          <tr><td style="padding:10px 0;border-bottom:1px solid #F3F4F6;font-weight:600;">Tipo</td><td style="padding:10px 0;border-bottom:1px solid #F3F4F6;text-transform:capitalize;">${opts.tipo}</td></tr>
+          <tr><td style="padding:10px 0;border-bottom:1px solid #F3F4F6;font-weight:600;">Método de pago</td><td style="padding:10px 0;border-bottom:1px solid #F3F4F6;">${opts.metodoPago.replace('_', ' ')}</td></tr>
+          <tr><td style="padding:10px 0;font-weight:600;">Monto declarado</td><td style="padding:10px 0;font-weight:700;color:#1E88E5;">$${opts.monto.toLocaleString('es-CO')} COP</td></tr>
+        </table>
+        <div style="background:#FFF7ED;border-left:4px solid #F97316;border-radius:6px;padding:14px 16px;margin:24px 0;">
+          <p style="margin:0;font-size:13px;color:#92400E;">
+            ⚡ ID de promoción: <strong>#${opts.promocionId}</strong><br/>
+            Aprueba o rechaza con:<br/>
+            <code>PATCH /promociones/${opts.promocionId}/aprobar</code>
+          </p>
+        </div>
+      `),
+    });
+    if (error) this.logger.error(`Error enviando notificación de nueva promoción: ${JSON.stringify(error)}`);
+    else this.logger.log(`Notificación de nueva promoción #${opts.promocionId} enviada a ${opts.adminEmail}`);
+  }
+
+  /** Notifica al profesional el resultado de su promoción (aprobada o rechazada) */
+  async sendPromocionResuelta(opts: {
+    to: string;
+    nombre: string;
+    aprobada: boolean;
+    planNombre: string;
+    tipo: string;
+    motivo?: string;
+    fechaFin?: Date;
+  }): Promise<void> {
+    const { aprobada } = opts;
+    const accentColor = aprobada ? '#16A34A' : '#DC2626';
+    const bgColor = aprobada ? '#F0FDF4' : '#FEF2F2';
+    const emoji = aprobada ? '🎉' : '❌';
+    const estado = aprobada ? 'APROBADA' : 'RECHAZADA';
+
+    const { error } = await this.resend.emails.send({
+      from: this.from,
+      to: opts.to,
+      subject: `${emoji} Tu promoción fue ${estado.toLowerCase()} — OfiApp`,
+      html: this.wrapLayout(`
+        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;">
+          ${emoji} Tu promoción fue ${estado.toLowerCase()}
+        </h1>
+        <p style="margin:0 0 20px;font-size:15px;color:#6B7280;">
+          Hola <strong style="color:#111827;">${opts.nombre}</strong>,
+          ${aprobada
+            ? 'tu promoción ha sido <strong>aprobada</strong> y ya está activa en la app.'
+            : 'tu promoción fue <strong>rechazada</strong>.'}
+        </p>
+        <div style="background:${bgColor};border-left:4px solid ${accentColor};border-radius:6px;padding:16px 20px;margin:0 0 20px;">
+          <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:${accentColor};">Estado: ${estado}</p>
+          <p style="margin:0;font-size:13px;color:#374151;">Plan: <strong>${opts.planNombre}</strong> · Tipo: <strong>${opts.tipo}</strong></p>
+          ${aprobada && opts.fechaFin ? `<p style="margin:4px 0 0;font-size:12px;color:#6B7280;">Activa hasta: <strong>${opts.fechaFin.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</strong></p>` : ''}
+          ${!aprobada && opts.motivo ? `<p style="margin:8px 0 0;font-size:13px;color:#374151;">Motivo: ${opts.motivo}</p>` : ''}
+        </div>
+        <p style="font-size:14px;color:#374151;">
+          ${aprobada
+            ? 'Revisa las estadísticas de tu promoción en <strong>Mis Promociones</strong> en la app.'
+            : 'Puedes crear una nueva promoción desde <strong>Mis Promociones</strong> en la app.'}
+        </p>
+      `),
+    });
+    if (error) this.logger.error(`Error enviando resolución de promoción a ${opts.to}: ${JSON.stringify(error)}`);
+    else this.logger.log(`Resolución de promoción enviada a ${opts.to} → ${estado}`);
+  }
+
   private wrapLayout(content: string): string {
     return `
 <!DOCTYPE html>

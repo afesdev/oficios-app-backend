@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { Usuario } from '../usuarios/usuario.entity';
 import { TokenRecuperacione } from '../usuarios/token-recuperacione.entity';
+import { NotificacionePush } from '../usuarios/notificacione-push.entity';
 import { Profesionale } from '../profesionales/profesional.entity';
 import { AuditoriaModule } from '../auditoria/auditoria.module';
 import { ProfesionalesModule } from '../profesionales/profesionales.module';
@@ -15,7 +16,7 @@ import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Usuario, Profesionale, TokenRecuperacione]),
+    TypeOrmModule.forFeature([Usuario, Profesionale, TokenRecuperacione, NotificacionePush]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -15,6 +15,13 @@ USE OficiosApp;
 GO
 
 -- 2. ELIMINACIÓN DE TABLAS EN ORDEN INVERSO
+-- Sistema de Promociones (primero por depender de Profesionales y Publicaciones)
+IF OBJECT_ID('dbo.PagosPromociones',       'U') IS NOT NULL DROP TABLE dbo.PagosPromociones;
+IF OBJECT_ID('dbo.PromocionBanners',       'U') IS NOT NULL DROP TABLE dbo.PromocionBanners;
+IF OBJECT_ID('dbo.PromocionPublicaciones', 'U') IS NOT NULL DROP TABLE dbo.PromocionPublicaciones;
+IF OBJECT_ID('dbo.PromocionPerfiles',      'U') IS NOT NULL DROP TABLE dbo.PromocionPerfiles;
+IF OBJECT_ID('dbo.Promociones',            'U') IS NOT NULL DROP TABLE dbo.Promociones;
+IF OBJECT_ID('dbo.PlanesPromocion',        'U') IS NOT NULL DROP TABLE dbo.PlanesPromocion;
 IF OBJECT_ID('dbo.FotosPublicaciones', 'U') IS NOT NULL DROP TABLE dbo.FotosPublicaciones;
 IF OBJECT_ID('dbo.Denuncias', 'U') IS NOT NULL DROP TABLE dbo.Denuncias;
 IF OBJECT_ID('dbo.PreciosReferenciales', 'U') IS NOT NULL DROP TABLE dbo.PreciosReferenciales;

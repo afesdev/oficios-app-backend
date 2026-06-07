@@ -56,7 +56,8 @@ export class ProfesionalesService {
     return this.repo.findOneOrFail({
       where: { id },
       relations: {
-        categoria: true, usuario: true, publicaciones: true, resenas: true,
+        categoria: true, usuario: true, publicaciones: true,
+        resenas: { cliente: true },
         servicios: { preciosReferenciales: true }, horariosAtencion: true, ubicaciones: true,
         enlacesProfesionales: true, verificacion: true,
       },
