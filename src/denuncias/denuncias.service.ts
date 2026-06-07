@@ -7,6 +7,7 @@ import { UpdateDenunciaDto } from './dto/update-denuncia.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { paginate, PaginatedResult } from '../common/utils/paginate';
 import { AuditService } from '../auditoria/audit.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class DenunciasService {
@@ -16,6 +17,7 @@ export class DenunciasService {
     @InjectRepository(Denuncia)
     private readonly repo: Repository<Denuncia>,
     private readonly audit: AuditService,
+    private readonly mail: MailService,
   ) {}
 
   findAll(pagination: PaginationDto): Promise<PaginatedResult<Denuncia>> {
@@ -52,14 +54,17 @@ export class DenunciasService {
   }
 
   async update(id: number, dto: UpdateDenunciaDto) {
-    const denuncia = await this.findOne(id);
+    const denuncia = await this.repo.findOne({
+      where: { id },
+      relations: { denunciante: true },
+    });
+    if (!denuncia) throw new NotFoundException('Denuncia no encontrada');
+
     const anterior = { estado: (denuncia as any).estado };
     Object.assign(denuncia, dto);
     await this.repo.save(denuncia);
 
-    this.logger.log(
-      `Denuncia resuelta: id=${id}, estado="${(denuncia as any).estado}"`,
-    );
+    this.logger.log(`Denuncia resuelta: id=${id}, estado="${(denuncia as any).estado}"`);
     this.audit.log({
       usuarioId: null,
       tabla: 'Denuncias',
@@ -68,6 +73,16 @@ export class DenunciasService {
       valorAnterior: anterior,
       valorNuevo: { estado: (denuncia as any).estado },
     });
+
+    // Notificar al denunciante por email (fire-and-forget)
+    if (denuncia.denunciante?.email) {
+      this.mail.sendDenunciaResuelta({
+        to: denuncia.denunciante.email,
+        nombre: denuncia.denunciante.nombre_completo,
+        estado: (denuncia as any).estado,
+        notasAdmin: (denuncia as any).notas_admin ?? undefined,
+      }).catch(() => {});
+    }
 
     return denuncia;
   }

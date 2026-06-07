@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Patch, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, Delete, Param, ParseIntPipe, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto/register.dto';
@@ -76,5 +76,22 @@ export class AuthController {
   @ApiOperation({ summary: 'Registrar token FCM para notificaciones push' })
   registrarFcmToken(@CurrentUser() user: Usuario, @Body() dto: FcmTokenDto) {
     return this.authService.registrarFcmToken(user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('fcm-tokens')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Listar tokens FCM del usuario' })
+  getFcmTokens(@CurrentUser() user: Usuario) {
+    return this.authService.getFcmTokens(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('fcm-tokens/:id')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Eliminar un token FCM' })
+  deleteFcmToken(@CurrentUser() user: Usuario, @Param('id', ParseIntPipe) id: number) {
+    return this.authService.deleteFcmToken(id, user.id);
   }
 }

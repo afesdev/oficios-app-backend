@@ -13,6 +13,8 @@ import { Verificacione } from './verificacione.entity';
 import { CreateProfesionalDto } from './dto/create-profesional.dto';
 import { UpdateProfesionalDto } from './dto/update-profesional.dto';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
+import { CreatePrecioDto } from './dto/create-precio.dto';
+import { UpdatePrecioDto } from './dto/update-precio.dto';
 import { AuditService } from '../auditoria/audit.service';
 import { AuditContextService } from '../auditoria/audit-context.service';
 
@@ -76,6 +78,45 @@ export class ProfesionalesService {
       .take(limit)
       .getRawMany();
     return result.map((r) => ({ ciudad: r.ciudad, count: parseInt(r.count, 10) }));
+  }
+
+  async autocomplete(q: string) {
+    if (!q || q.length < 2) return { profesionales: [], categorias: [], ciudades: [] };
+
+    const [profesionales, categorias, ciudades] = await Promise.all([
+      this.repo.createQueryBuilder('prof')
+        .leftJoin('prof.usuario', 'usr')
+        .select(['prof.id', 'usr.nombre_completo', 'prof.ciudad'])
+        .where('usr.nombre_completo LIKE :q', { q: `%${q}%` })
+        .take(5)
+        .getMany(),
+
+      this.repo.createQueryBuilder('prof')
+        .leftJoin('prof.categoria', 'cat')
+        .select('cat.nombre')
+        .where('cat.nombre LIKE :q', { q: `%${q}%` })
+        .groupBy('cat.nombre')
+        .take(5)
+        .getRawMany(),
+
+      this.repo.createQueryBuilder('prof')
+        .select('prof.ciudad', 'ciudad')
+        .where('prof.ciudad LIKE :q', { q: `%${q}%` })
+        .groupBy('prof.ciudad')
+        .orderBy('COUNT(prof.id)', 'DESC')
+        .take(5)
+        .getRawMany(),
+    ]);
+
+    return {
+      profesionales: profesionales.map((p) => ({
+        id: p.id,
+        nombre: (p as any).usuario?.nombre_completo ?? '',
+        ciudad: p.ciudad,
+      })),
+      categorias: categorias.map((c: any) => c.cat_nombre),
+      ciudades: ciudades.map((c: any) => c.ciudad),
+    };
   }
 
   async search(pagination: PaginationDto, q?: string, ciudad?: string, categoriaId?: number) {
@@ -256,5 +297,30 @@ export class ProfesionalesService {
       valorAnterior: { nombre: servicio.nombre, descripcion: servicio.descripcion, duracion_estimada_min: servicio.duracion_estimada_min },
     });
     return this.serviciosRepo.remove(servicio);
+  }
+
+  // ─── Precios Referenciales ──────────────────────────────────────
+
+  async getPrecios(servicioId: number) {
+    return this.preciosRepo.find({ where: { servicio_id: servicioId } });
+  }
+
+  async createPrecio(dto: CreatePrecioDto) {
+    const servicio = await this.serviciosRepo.findOneBy({ id: dto.servicio_id });
+    if (!servicio) throw new NotFoundException('Servicio no encontrado');
+    const precio = this.preciosRepo.create(dto);
+    return this.preciosRepo.save(precio);
+  }
+
+  async updatePrecio(id: number, dto: UpdatePrecioDto) {
+    const precio = await this.preciosRepo.findOneBy({ id });
+    if (!precio) throw new NotFoundException('Precio no encontrado');
+    Object.assign(precio, dto);
+    return this.preciosRepo.save(precio);
+  }
+
+  async removePrecio(id: number) {
+    const precio = await this.preciosRepo.findOneByOrFail({ id });
+    return this.preciosRepo.remove(precio);
   }
 }

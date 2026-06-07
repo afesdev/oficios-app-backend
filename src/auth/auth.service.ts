@@ -312,11 +312,18 @@ export class AuthService {
   }
 
   /** Obtiene los tokens FCM activos de un usuario */
-  async getFcmTokens(usuarioId: number): Promise<string[]> {
-    const tokens = await this.fcmRepo.find({
+  async getFcmTokens(usuarioId: number): Promise<NotificacionePush[]> {
+    return this.fcmRepo.find({
       where: { usuario_id: usuarioId, activo: true },
+      order: { ultimo_uso: 'DESC' },
     });
-    return tokens.map((t) => t.token);
+  }
+
+  /** Elimina un token FCM por ID */
+  async deleteFcmToken(tokenId: number, usuarioId: number): Promise<void> {
+    const token = await this.fcmRepo.findOneBy({ id: tokenId, usuario_id: usuarioId });
+    if (!token) throw new NotFoundException('Token no encontrado');
+    await this.fcmRepo.remove(token);
   }
 
   private generateToken(usuario: Usuario) {

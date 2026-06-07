@@ -15,6 +15,9 @@ export class Verificacione {
   @Column({ length: 2083 })
   documento_url: string;
 
+  @Column({ length: 2083, nullable: true })
+  selfie_url: string;
+
   @Column({ length: 20, default: 'pendiente' })
   estado: string;
 

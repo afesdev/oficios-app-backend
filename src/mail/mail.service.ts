@@ -190,6 +190,157 @@ export class MailService {
     else this.logger.log(`Resolución de promoción enviada a ${opts.to} → ${estado}`);
   }
 
+  /** Notifica al profesional que recibió una nueva reseña */
+  async sendNewReview(opts: {
+    to: string;
+    profesionalNombre: string;
+    clienteNombre: string;
+    puntuacion: number;
+    comentario?: string;
+  }): Promise<void> {
+    const estrellas = '★'.repeat(opts.puntuacion) + '☆'.repeat(5 - opts.puntuacion);
+    const { error } = await this.resend.emails.send({
+      from: this.from,
+      to: opts.to,
+      subject: `⭐ Nueva reseña de ${opts.clienteNombre} — OfiApp`,
+      html: this.wrapLayout(`
+        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;">
+          ⭐ ¡Recibiste una nueva reseña!
+        </h1>
+        <p style="margin:0 0 20px;font-size:15px;color:#6B7280;">
+          Hola <strong style="color:#111827;">${opts.profesionalNombre}</strong>,
+          <strong>${opts.clienteNombre}</strong> te ha calificado.
+        </p>
+        <div style="background:#FEF9C3;border-radius:10px;padding:20px 24px;margin:0 0 20px;text-align:center;">
+          <p style="margin:0 0 8px;font-size:24px;color:#F59E0B;">${estrellas}</p>
+          <p style="margin:0;font-size:13px;color:#92400E;">${opts.puntuacion}/5</p>
+        </div>
+        ${opts.comentario ? `
+        <div style="background:#F9FAFB;border-radius:8px;padding:16px 20px;margin:0 0 20px;">
+          <p style="margin:0;font-size:14px;color:#374151;font-style:italic;">"${opts.comentario}"</p>
+        </div>` : ''}
+        <p style="font-size:14px;color:#374151;">
+          Las reseñas ayudan a otros clientes a conocerte mejor.
+          Revisa tu perfil para verla.
+        </p>
+      `),
+    });
+    if (error) this.logger.error(`Error enviando notificación de reseña: ${JSON.stringify(error)}`);
+    else this.logger.log(`Notificación de reseña enviada a ${opts.to}`);
+  }
+
+  /** Notifica al profesional que alguien se contactó con él */
+  async sendNewContact(opts: {
+    to: string;
+    profesionalNombre: string;
+    clienteNombre: string;
+    tipoContacto: string;
+  }): Promise<void> {
+    const icono = opts.tipoContacto === 'whatsapp' ? '💬' : '📞';
+    const tipo = opts.tipoContacto === 'whatsapp' ? 'WhatsApp' : 'llamada telefónica';
+    const { error } = await this.resend.emails.send({
+      from: this.from,
+      to: opts.to,
+      subject: `${icono} Nuevo contacto de ${opts.clienteNombre} — OfiApp`,
+      html: this.wrapLayout(`
+        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;">
+          ${icono} ¡Nuevo contacto recibido!
+        </h1>
+        <p style="margin:0 0 20px;font-size:15px;color:#6B7280;">
+          Hola <strong style="color:#111827;">${opts.profesionalNombre}</strong>,
+          <strong>${opts.clienteNombre}</strong> se ha contactado contigo vía <strong>${tipo}</strong>.
+        </p>
+        <div style="background:#F0FDF4;border-left:4px solid #22C55E;border-radius:6px;padding:16px 20px;margin:0 0 20px;">
+          <p style="margin:0;font-size:14px;color:#166534;">
+            Revisa tu bandeja de mensajes o historial de contactos en la app para más detalles y responde a la brevedad.
+          </p>
+        </div>
+        <p style="font-size:14px;color:#374151;">
+          Mantener una respuesta rápida mejora tu reputación en OfiApp.
+        </p>
+      `),
+    });
+    if (error) this.logger.error(`Error enviando notificación de contacto: ${JSON.stringify(error)}`);
+    else this.logger.log(`Notificación de contacto enviada a ${opts.to}`);
+  }
+
+  /** Notifica al denunciante que su denuncia fue resuelta */
+  async sendDenunciaResuelta(opts: {
+    to: string;
+    nombre: string;
+    estado: string;
+    notasAdmin?: string;
+  }): Promise<void> {
+    const esProcedente = opts.estado === 'procedente';
+    const emoji = esProcedente ? '✅' : 'ℹ️';
+    const color = esProcedente ? '#16A34A' : '#6B7280';
+    const bgColor = esProcedente ? '#F0FDF4' : '#F9FAFB';
+    const { error } = await this.resend.emails.send({
+      from: this.from,
+      to: opts.to,
+      subject: `${emoji} Denuncia resuelta — OfiApp`,
+      html: this.wrapLayout(`
+        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;">
+          ${emoji} Denuncia resuelta
+        </h1>
+        <p style="margin:0 0 20px;font-size:15px;color:#6B7280;">
+          Hola <strong style="color:#111827;">${opts.nombre}</strong>,
+          la denuncia que reportaste ha sido revisada y resuelta.
+        </p>
+        <div style="background:${bgColor};border-left:4px solid ${color};border-radius:6px;padding:16px 20px;margin:0 0 20px;">
+          <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:${color};">Resultado: ${opts.estado.toUpperCase()}</p>
+          ${opts.notasAdmin ? `<p style="margin:4px 0 0;font-size:13px;color:#374151;">${opts.notasAdmin}</p>` : ''}
+        </div>
+        <p style="font-size:14px;color:#374151;">
+          Gracias por ayudarnos a mantener la comunidad segura. Si tienes más información, puedes contactarnos respondiendo este correo.
+        </p>
+      `),
+    });
+    if (error) this.logger.error(`Error enviando resolución de denuncia: ${JSON.stringify(error)}`);
+    else this.logger.log(`Resolución de denuncia enviada a ${opts.to}`);
+  }
+
+  /** Notifica al profesional el resultado de su verificación */
+  async sendVerificacionResuelta(opts: {
+    to: string;
+    nombre: string;
+    estado: string;
+    notasAdmin?: string;
+  }): Promise<void> {
+    const aprobada = opts.estado === 'aprobado';
+    const emoji = aprobada ? '✅' : '❌';
+    const color = aprobada ? '#16A34A' : '#DC2626';
+    const bgColor = aprobada ? '#F0FDF4' : '#FEF2F2';
+    const estado = aprobada ? 'APROBADA' : 'RECHAZADA';
+
+    const { error } = await this.resend.emails.send({
+      from: this.from,
+      to: opts.to,
+      subject: `${emoji} Verificación ${estado.toLowerCase()} — OfiApp`,
+      html: this.wrapLayout(`
+        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;">
+          ${emoji} Verificación de identidad ${estado.toLowerCase()}
+        </h1>
+        <p style="margin:0 0 20px;font-size:15px;color:#6B7280;">
+          Hola <strong style="color:#111827;">${opts.nombre}</strong>,
+          la verificación de tu identidad ha sido resuelta.
+        </p>
+        <div style="background:${bgColor};border-left:4px solid ${color};border-radius:6px;padding:16px 20px;margin:0 0 20px;">
+          <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:${color};">Estado: ${estado}</p>
+          ${!aprobada && opts.notasAdmin ? `<p style="margin:4px 0 0;font-size:13px;color:#374151;">Motivo: ${opts.notasAdmin}</p>` : ''}
+          ${aprobada ? '<p style="margin:4px 0 0;font-size:13px;color:#16A34A;">Tu perfil ahora muestra el sello de verificado. ¡Felicidades!</p>' : ''}
+        </div>
+        <p style="font-size:14px;color:#374151;">
+          ${aprobada
+            ? 'Ahora los clientes verán tu cuenta como verificada, lo que genera mayor confianza.'
+            : 'Puedes volver a solicitar la verificación desde tu perfil en cualquier momento.'}
+        </p>
+      `),
+    });
+    if (error) this.logger.error(`Error enviando verificación a ${opts.to}: ${JSON.stringify(error)}`);
+    else this.logger.log(`Verificación enviada a ${opts.to} → ${estado}`);
+  }
+
   private wrapLayout(content: string): string {
     return `
 <!DOCTYPE html>

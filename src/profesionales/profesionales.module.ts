@@ -8,8 +8,10 @@ import { Ubicacione } from './ubicacione.entity';
 import { EnlaceProfesional } from './enlace-profesional.entity';
 import { Verificacione } from './verificacione.entity';
 import { ProfesionalesController } from './profesionales.controller';
+import { VerificacionesController } from './verificaciones.controller';
 import { ProfesionalesService } from './profesionales.service';
 import { AuditoriaModule } from '../auditoria/auditoria.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -18,8 +20,9 @@ import { AuditoriaModule } from '../auditoria/auditoria.module';
       HorarioAtencion, Ubicacione, EnlaceProfesional, Verificacione,
     ]),
     AuditoriaModule,
+    MailModule,
   ],
-  controllers: [ProfesionalesController],
+  controllers: [ProfesionalesController, VerificacionesController],
   providers: [ProfesionalesService],
   exports: [TypeOrmModule, ProfesionalesService],
 })

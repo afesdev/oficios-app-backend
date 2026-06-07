@@ -20,6 +20,7 @@ import { LikesModule } from './likes/likes.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { PromocionesModule } from './promociones/promociones.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { PromocionesModule } from './promociones/promociones.module';
     FirebaseModule,
     UploadsModule,
     PromocionesModule,
+    TasksModule,
   ],
   controllers: [AppController],
   providers: [

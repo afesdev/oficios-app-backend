@@ -7,6 +7,8 @@ import { CreateResenaPublicacionDto } from './dto/create-resena-publicacion.dto'
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { paginate } from '../common/utils/paginate';
 import { AuditService } from '../auditoria/audit.service';
+import { MailService } from '../mail/mail.service';
+import { Profesionale } from '../profesionales/profesional.entity';
 
 @Injectable()
 export class ResenasService {
@@ -15,7 +17,10 @@ export class ResenasService {
   constructor(
     @InjectRepository(Resena)
     private readonly repo: Repository<Resena>,
+    @InjectRepository(Profesionale)
+    private readonly profRepo: Repository<Profesionale>,
     private readonly audit: AuditService,
+    private readonly mail: MailService,
   ) {}
 
   findByPublicacion(publicacionId: number, pagination: PaginationDto) {
@@ -54,7 +59,27 @@ export class ResenasService {
     });
 
     // Recargar con relación cliente para que el cliente reciba nombre e imagen
-    return this.repo.findOne({ where: { id: saved.id }, relations: { cliente: true } });
+    const savedRel = await this.repo.findOne({ where: { id: saved.id }, relations: { cliente: true } });
+
+    // Notificar al profesional por email (fire-and-forget)
+    if (savedRel?.cliente) {
+      this.profRepo.findOne({
+        where: { id: profesionalId },
+        relations: { usuario: true },
+      }).then((prof) => {
+        if (prof?.usuario?.email) {
+          this.mail.sendNewReview({
+            to: prof.usuario.email,
+            profesionalNombre: prof.usuario.nombre_completo,
+            clienteNombre: savedRel.cliente.nombre_completo,
+            puntuacion: dto.puntuacion,
+            comentario: dto.comentario ?? undefined,
+          }).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+
+    return savedRel;
   }
 
   findByProfesional(profesionalId: number, pagination: PaginationDto) {
@@ -117,6 +142,28 @@ export class ResenasService {
         comentario: resena.comentario,
       },
     });
+
+    // Notificar al profesional por email (fire-and-forget)
+    const full = await this.repo.findOne({
+      where: { id: resena.id },
+      relations: { cliente: true },
+    });
+    if (full?.cliente) {
+      this.profRepo.findOne({
+        where: { id: resena.profesional_id },
+        relations: { usuario: true },
+      }).then((prof) => {
+        if (prof?.usuario?.email) {
+          this.mail.sendNewReview({
+            to: prof.usuario.email,
+            profesionalNombre: prof.usuario.nombre_completo,
+            clienteNombre: full.cliente!.nombre_completo,
+            puntuacion: full.puntuacion,
+            comentario: full.comentario ?? undefined,
+          }).catch(() => {});
+        }
+      }).catch(() => {});
+    }
 
     return resena;
   }

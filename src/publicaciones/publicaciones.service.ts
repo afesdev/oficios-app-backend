@@ -148,8 +148,23 @@ export class PublicacionesService {
 
   async update(id: number, dto: UpdatePublicacioneDto) {
     const pub = await this.findOne(id);
-    Object.assign(pub, dto);
-    return this.repo.save(pub);
+    const { fotos_urls, ...pubData } = dto;
+    Object.assign(pub, pubData);
+    await this.repo.save(pub);
+
+    if (fotos_urls !== undefined) {
+      await this.fotosRepo.delete({ publicacion: { id } });
+      if (fotos_urls.length > 0) {
+        const fotos = fotos_urls.map((url, i) => ({
+          publicacion: pub,
+          imagen_url: url,
+          orden: i,
+        }));
+        await this.fotosRepo.insert(fotos as any);
+      }
+    }
+
+    return this.findOne(id);
   }
 
   async remove(id: number) {
