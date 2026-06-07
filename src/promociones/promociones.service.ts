@@ -431,6 +431,7 @@ export class PromocionesService {
   // ────────────────────────────────────────────────────────────────────
 
   getMisPromociones(profesionalId: number): Promise<Promocion[]> {
+    if (!profesionalId) return Promise.resolve([]);   // usuario sin perfil profesional
     return this.promoRepo.find({
       where: { profesional_id: profesionalId },
       relations: {
