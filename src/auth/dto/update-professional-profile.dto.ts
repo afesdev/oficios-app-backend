@@ -2,6 +2,22 @@ import { IsInt, IsString, IsOptional, IsBoolean, IsNumber, MaxLength, Min, IsArr
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
+class PrecioDto {
+  @ApiPropertyOptional({ example: 50000 })
+  @IsNumber()
+  precio_min: number;
+
+  @ApiPropertyOptional({ example: 150000 })
+  @IsOptional()
+  @IsNumber()
+  precio_max?: number;
+
+  @ApiPropertyOptional({ example: 'Por servicio' })
+  @IsOptional()
+  @IsString()
+  descripcion_precio?: string;
+}
+
 class ServicioDto {
   @ApiPropertyOptional({ example: 'Reparación de fugas' })
   @IsString()
@@ -17,6 +33,13 @@ class ServicioDto {
   @IsOptional()
   @IsInt()
   duracion_estimada_min?: number;
+
+  @ApiPropertyOptional({ type: [PrecioDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PrecioDto)
+  precios?: PrecioDto[];
 }
 
 class HorarioDto {
@@ -86,6 +109,11 @@ class UbicacionDto {
   @IsOptional()
   @IsBoolean()
   es_principal?: boolean;
+
+  @ApiPropertyOptional({ example: true, default: true, description: 'Si está en true, la ubicación aparece en el mapa público' })
+  @IsOptional()
+  @IsBoolean()
+  visible_en_mapa?: boolean;
 }
 
 export class UpdateProfessionalProfileDto {

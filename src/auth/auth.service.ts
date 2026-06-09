@@ -169,9 +169,19 @@ export class AuthService {
     if (servicios) {
       await this.profesionalesService['serviciosRepo'].delete({ profesional_id: profesional.id });
       if (servicios.length > 0) {
-        await this.profesionalesService['serviciosRepo'].insert(
-          servicios.map((s) => ({ ...s, profesional_id: profesional.id })),
-        );
+        for (const s of servicios) {
+          const { precios, ...servicioData } = s as any;
+          const saved = await this.profesionalesService['serviciosRepo'].save(
+            this.profesionalesService['serviciosRepo'].create({ ...servicioData, profesional_id: profesional.id }),
+          );
+          if (precios && Array.isArray(precios) && precios.length > 0) {
+            await this.profesionalesService['preciosRepo'].save(
+              precios.map((p: any) =>
+                this.profesionalesService['preciosRepo'].create({ ...p, servicio_id: (saved as any).id }),
+              ),
+            );
+          }
+        }
       }
     }
 
@@ -324,6 +334,21 @@ export class AuthService {
     const token = await this.fcmRepo.findOneBy({ id: tokenId, usuario_id: usuarioId });
     if (!token) throw new NotFoundException('Token no encontrado');
     await this.fcmRepo.remove(token);
+  }
+
+  async toggleVisibilidadUbicacion(usuarioId: number, ubicacionId: number, visible: boolean): Promise<void> {
+    const profesional = await this.profesionalRepo.findOneBy({ usuario_id: usuarioId });
+    if (!profesional) throw new NotFoundException('Perfil profesional no encontrado');
+
+    const ub = await this.profesionalesService['ubicacionesRepo'].findOneBy({
+      id: ubicacionId,
+      profesional_id: profesional.id,
+    });
+    if (!ub) throw new NotFoundException('Ubicación no encontrada');
+
+    await this.profesionalesService['ubicacionesRepo'].update(ubicacionId, {
+      visible_en_mapa: visible,
+    });
   }
 
   private generateToken(usuario: Usuario) {

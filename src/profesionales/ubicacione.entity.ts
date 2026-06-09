@@ -30,6 +30,9 @@ export class Ubicacione {
   @Column({ default: false })
   es_principal: boolean;
 
+  @Column({ default: true })
+  visible_en_mapa: boolean;
+
   @ManyToOne(() => Profesionale, (pro) => pro.ubicaciones)
   @JoinColumn({ name: 'profesional_id' })
   profesional: Profesionale;

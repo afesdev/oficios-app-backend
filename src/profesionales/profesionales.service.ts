@@ -156,7 +156,7 @@ export class ProfesionalesService {
       .leftJoinAndSelect('prof.categoria', 'cat')
       .leftJoinAndSelect('prof.usuario', 'usr')
       .leftJoinAndSelect('prof.ubicaciones', 'ub')
-      .where('ub.latitud IS NOT NULL AND ub.longitud IS NOT NULL')
+      .where('ub.latitud IS NOT NULL AND ub.longitud IS NOT NULL AND ub.visible_en_mapa = 1')
       .getMany();
 
     this.logger.debug(`searchNearby: total professionals with ubicaciones: ${all.length}`);
@@ -166,7 +166,7 @@ export class ProfesionalesService {
     const totalUbs = await this.ubicacionesRepo.count();
     const ubsWithCoords = await this.ubicacionesRepo
       .createQueryBuilder('ub')
-      .where('ub.latitud IS NOT NULL AND ub.longitud IS NOT NULL')
+      .where('ub.latitud IS NOT NULL AND ub.longitud IS NOT NULL AND ub.visible_en_mapa = 1')
       .getCount();
     this.logger.debug(`searchNearby DB stats: profesionales=${totalProfs}, ubicaciones=${totalUbs}, ubs_with_coords=${ubsWithCoords}`);
 

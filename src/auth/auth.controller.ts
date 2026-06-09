@@ -87,6 +87,19 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Patch('profile/profesional/ubicaciones/:id/visibilidad')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Activar o desactivar visibilidad en mapa de una ubicación' })
+  toggleVisibilidadUbicacion(
+    @CurrentUser() user: Usuario,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('visible_en_mapa') visible: boolean,
+  ) {
+    return this.authService.toggleVisibilidadUbicacion(user.id, id, visible);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete('fcm-tokens/:id')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
