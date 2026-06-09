@@ -14,6 +14,9 @@ export class MailService {
   }
 
   async sendPasswordReset(to: string, nombre: string, token: string): Promise<void> {
+    const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
     const { error } = await this.resend.emails.send({
       from: this.from,
       to,
@@ -27,25 +30,32 @@ export class MailService {
           para restablecer la contraseña de tu cuenta en OfiApp.
         </p>
 
-        <p style="margin:0 0 16px;font-size:15px;color:#374151;">
-          Copia el siguiente código y pégalo en la app en la pantalla de
-          <strong>Restablecer contraseña</strong>:
+        <p style="margin:0 0 20px;font-size:15px;color:#374151;">
+          Haz clic en el siguiente botón para elegir una nueva contraseña:
         </p>
 
-        <div style="background:#F3F4F6;border:2px dashed #D1D5DB;border-radius:10px;
-                    padding:20px;margin:24px 0;text-align:center;">
-          <p style="margin:0 0 8px;font-size:12px;color:#9CA3AF;text-transform:uppercase;
-                    letter-spacing:1px;font-weight:600;">Código de recuperación</p>
-          <p style="margin:0;font-size:14px;font-family:monospace;color:#111827;
-                    word-break:break-all;letter-spacing:1px;">${token}</p>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="${resetLink}"
+             style="display:inline-block;background:#4F46E5;color:#ffffff;
+                    font-size:15px;font-weight:700;text-decoration:none;
+                    padding:14px 32px;border-radius:10px;letter-spacing:0.2px;">
+            Restablecer contraseña
+          </a>
         </div>
 
         <div style="background:#FFF7ED;border-left:4px solid #F97316;border-radius:6px;
                     padding:14px 16px;margin:24px 0;">
           <p style="margin:0;font-size:13px;color:#92400E;">
-            ⏱ Este código expira en <strong>60 minutos</strong>.
+            ⏱ Este enlace expira en <strong>60 minutos</strong>.
           </p>
         </div>
+
+        <p style="margin:0 0 8px;font-size:12px;color:#9CA3AF;">
+          Si el botón no funciona, copia y pega este enlace en tu navegador:
+        </p>
+        <p style="margin:0;font-size:12px;font-family:monospace;color:#6B7280;word-break:break-all;">
+          ${resetLink}
+        </p>
 
         <p style="margin:24px 0 0;font-size:13px;color:#9CA3AF;line-height:1.6;">
           Si no solicitaste este cambio, puedes ignorar este correo. Tu contraseña
