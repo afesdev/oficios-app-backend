@@ -175,11 +175,10 @@ export class AuthService {
             this.profesionalesService['serviciosRepo'].create({ ...servicioData, profesional_id: profesional.id }),
           );
           if (precios && Array.isArray(precios) && precios.length > 0) {
-            await this.profesionalesService['preciosRepo'].save(
-              precios.map((p: any) =>
-                this.profesionalesService['preciosRepo'].create({ ...p, servicio_id: (saved as any).id }),
-              ),
+            const precioEntities = precios.map((p: any) =>
+              this.profesionalesService['preciosRepo'].create({ ...p, servicio_id: (saved as any).id }),
             );
+            await this.profesionalesService['preciosRepo'].save(precioEntities as any);
           }
         }
       }
